@@ -64,7 +64,7 @@
                 if (this.visible) {
                     this.y -= 10; // Adjust the speed of the shovel's movement
                     if (this.y < -shovelImage.height) {
-                        this.visible = false; // Reset once the shovel reaches the top
+                        shovels.shift()
                     }
                 }
             }
@@ -125,7 +125,7 @@
                 alexanderX -= 15; // Adjust the movement speed as needed
           }
 
-          if (event.code === 'Space') {
+          if (event.code === 'Space' && shovels.length < 10) {
               const shovel = new Shovel(alexanderX, canvas.height, shovelImage);
               shovel.visible = true;
               shovel.x = alexanderX;
@@ -179,14 +179,18 @@
             drawSnowflakes();
 
             checkCollisions();
-            if (Math.floor(Math.random() * 50) === 0 && snowflakes.length < 70) {
+            if (Math.floor(Math.random() * 50) === 0 && snowflakes.length < 100) {
                 addSnowFlake();
             }
             
-            if (20 === score) {
+            if (30 === score) {
+                belowFreezing = true;
+                startTime = Date.now()
+            } else if (100 === score) {
                 iceKing = true;
                 startTime = Date.now()
             }
+            
             // Render the image if the timer is active
             if (iceKing) {
                 const elapsedTime = Date.now() - startTime;
@@ -195,14 +199,42 @@
                     ctx.drawImage(iceKingWords, (canvas.width/2)-iceKingWords.width/2, canvas.height/2);
                 } else {
                     // Stop rendering the image after 5 seconds
+                    startTime = null;
                     iceKing = false;
                 }
             }
+            if (belowFreezing) {
+                const elapsedTime = Date.now() - startTime;
+                if (elapsedTime < 5000) { // 5000 milliseconds = 5 seconds
+                    // Draw the image
+                    ctx.drawImage(belowFreezingWords, (canvas.width/2)-belowFreezingWords.width/2, canvas.height/2);
+                } else {
+                    // Stop rendering the image after 5 seconds
+                    startTime = null;
+                    belowFreezing = false;
+                }
+            }
 
+            if (deathsDoor) {
+                const elapsedTime = Date.now() - startTime;
+                if (elapsedTime < 10000) { // 5000 milliseconds = 5 seconds
+                    // Draw the image
+                    ctx.drawImage(deathsDoorWords, (canvas.width/2)-deathsDoorWords.width/2, canvas.height/2);
+                } else {
+                    // Stop rendering the image after 5 seconds
+                    startTime = null;
+                    deathsDoor = false;
+                }
+            }
             if (hitCount > 10) {
               offices--;
-              if (0 === offices) {
-                alert("game over. Score: ** " + score + " **");
+              if (1 === offices) {
+                  belowFreezing = false;
+                  iceKind = false;
+                  deathsDoor = true;
+                  startTime = Date.now()
+              } else if (0 === offices) {
+                  alert("game over. Score: ** " + score + " **");
               }
               hitCount = 0;
             }
@@ -211,7 +243,7 @@
         const canvas = document.getElementById('myCanvas');
         const ctx = canvas.getContext('2d');
         let alexanderX = canvas.width/2;
-        let offices = 3;
+        let offices = 2;
         let hitCount = 0;
         let score = 0;
         let shovels = [];
@@ -219,6 +251,8 @@
         let right = false;
         let machineGun = false;
         let iceKing = false;
+        let belowFreezing = false;
+        let deathsDoor = null;
         let startTime;
         let keys = {};
 
@@ -244,6 +278,12 @@
 
         const iceKingWords = new Image();
         iceKingWords.src = 'assets/ice-king.png';
+
+        const belowFreezingWords = new Image();
+        belowFreezingWords.src = 'assets/below-freezing.png';
+
+        const deathsDoorWords = new Image();
+        deathsDoorWords.src = 'assets/deaths-door.png';
 
         let snowflakes = [];
 
