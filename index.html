@@ -62,13 +62,31 @@
 
             update() {
                 if (this.visible) {
-                    this.y -= 20; // Adjust the speed of the shovel's movement
+                    this.y -= 10; // Adjust the speed of the shovel's movement
                     if (this.y < -shovelImage.height) {
                         this.visible = false; // Reset once the shovel reaches the top
                     }
                 }
             }
         }
+        class SpecialItem {
+            constructor(x, y, image) {
+                this.x = x;
+                this.y = y;
+                this.image = image;
+            }
+
+            draw(ctx) {
+                  ctx.drawImage(this.image, this.x, this.y);
+            }
+
+            update() {
+                if (this.visible) {
+                    this.y -= 15; // Adjust the speed of the shovel's movement
+                }
+            }
+        }
+
         // Function to draw the snowflake on the canvas
         function drawSnowflakes() {
             for (const snowflake of snowflakes) {
@@ -76,8 +94,19 @@
             }          
         }
 
+        // Function to draw the shovel on the canvas
+        function drawShovels () {
+            for (const shovel of shovels) {
+                shovel.draw(ctx);
+            }          
+        }
+
         function addSnowFlake() {
             // Create an Image object for the snowflakeImage
+            if (Math.floor(Math.random() * 100) % 10 === 0 && snowflakes.length < 70) {
+                //const infinity = new SpecialItem(Math.floor(Math.random() * (canvas.width - infinityImg.width)), 0, infinityImg);
+                //snowflakes.push(infinity);
+            }
             const snowflakeImage = new Image();
             snowflakeImage.src = 'assets/snow-flake.png';
 
@@ -87,30 +116,35 @@
 
         function keyDownHandler(event) {
             // Move to the right on right arrow key press
-          if (event.code === 'ArrowRight' && alexanderX <= 1180) {
+          if (event.code === 'ArrowRight' || keys['ArrowRight'] && alexanderX <= 1180) {
                 alexanderX += 15; // Adjust the movement speed as needed
             }
 
             // Move to the left on left arrow key press
-          if (event.code === 'ArrowLeft' && alexanderX >= 10) {
+          if (event.code === 'ArrowLeft' || keys['ArrowLeft'] && alexanderX >= 10) {
                 alexanderX -= 15; // Adjust the movement speed as needed
-            }
+          }
 
-            if (event.code === 'Space' && !shovel.visible) {
-                shovel.visible = true;
-                shovel.x = alexanderX;
-                shovel.y = canvas.height; // Reset shovel to the bottom
-            }
+          if (event.code === 'Space') {
+              const shovel = new Shovel(alexanderX, canvas.height, shovelImage);
+              shovel.visible = true;
+              shovel.x = alexanderX;
+              shovel.y = canvas.height; // Reset shovel to the bottom
+
+              shovels.push(shovel)
+          }
         }
         function checkCollisions() {
             for (let i = snowflakes.length - 1; i >= 0; i--) {
                 const snowflake = snowflakes[i];
-
-                if (collisionDetection(shovel, snowflake)) {
-                    // Collision detected, remove the snowflake from the array
-                    snowflakes.splice(i, 1);
-                    score++;
-                    // You can add additional logic here when a collision occurs
+                for (let j = shovels.length -1; j >= 0; j--) {
+                    const shovel = shovels[j];
+                    if (collisionDetection(shovel, snowflake)) {
+                        // Collision detected, remove the snowflake from the array
+                        snowflakes.splice(i, 1);
+                        score++;
+                        // You can add additional logic here when a collision occurs
+                    }
                 }
             }
         }
@@ -127,7 +161,7 @@
         function update() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             for (const snowflake of snowflakes) {
-              snowflake.update();
+                snowflake.update();
             }
             //ctx.drawImage(alex1,canvas.width/2,canvas.height-alex1.height);
             //ctx.drawImage(alex1,canvas.width-(alex1.width+50),canvas.height-alex1.height);
@@ -136,14 +170,33 @@
             }
 
             ctx.drawImage(alex1,alexanderX,canvas.height-alex1.height);
+            
+            for (const shovel of shovels) {
+                shovel.update();
+            }
+            drawShovels();
 
-            shovel.update();
-            shovel.draw(ctx);
             drawSnowflakes();
 
             checkCollisions();
             if (Math.floor(Math.random() * 50) === 0 && snowflakes.length < 70) {
                 addSnowFlake();
+            }
+            
+            if (20 === score) {
+                iceKing = true;
+                startTime = Date.now()
+            }
+            // Render the image if the timer is active
+            if (iceKing) {
+                const elapsedTime = Date.now() - startTime;
+                if (elapsedTime < 5000) { // 5000 milliseconds = 5 seconds
+                    // Draw the image
+                    ctx.drawImage(iceKingWords, (canvas.width/2)-iceKingWords.width/2, canvas.height/2);
+                } else {
+                    // Stop rendering the image after 5 seconds
+                    iceKing = false;
+                }
             }
 
             if (hitCount > 10) {
@@ -161,6 +214,21 @@
         let offices = 3;
         let hitCount = 0;
         let score = 0;
+        let shovels = [];
+        let left = false;
+        let right = false;
+        let machineGun = false;
+        let iceKing = false;
+        let startTime;
+        let keys = {};
+
+        window.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
         // Create a linear gradient from bottom to top
         const alex1 = new Image();
         alex1.src = 'assets/alexander.png';
@@ -170,7 +238,12 @@
 
         const shovelImage = new Image();
         shovelImage.src = 'assets/shovel.png';
-        const shovel = new Shovel(alexanderX, canvas.height, shovelImage);
+      
+        const infinityImg = new Image();
+        infinityImg.src = 'assets/infinity.png';
+
+        const iceKingWords = new Image();
+        iceKingWords.src = 'assets/ice-king.png';
 
         let snowflakes = [];
 
