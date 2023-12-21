@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snow Removal!!!!!!</title>
+    <link rel="icon" type="image/x-icon" href="assets/snow-flake.png">
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #000099; /* Set your desired background color */
+            overflow: hidden;
+        }
+
+        canvas {
+            border: 2px solid #fad6a5; /* Set your desired border color */
+            background: linear-gradient(to top, #FF7F50, blue);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="1200" height="900"></canvas>
+
+    <script>
+        class Snowflake {
+            constructor(x, y, image) {
+                this.x = x;
+                this.y = y;
+                this.image = image;
+            }
+
+            draw(ctx) {
+                ctx.drawImage(this.image, this.x, this.y);
+            }
+
+            update() {
+                this.y += 1; 
+                // Reset the position when the snowflake goes off the canvas
+                if (this.y > canvas.height) {
+                    this.y = this.image.height;
+                    hitCount++;
+                }
+            }
+        }
+        class Shovel {
+            constructor(x, y, image) {
+                this.x = x;
+                this.y = y;
+                this.image = image;
+                this.visible = false;
+            }
+
+            draw(ctx) {
+                if (this.visible) {
+                    ctx.drawImage(this.image, this.x, this.y);
+                }
+            }
+
+            update() {
+                if (this.visible) {
+                    this.y -= 20; // Adjust the speed of the shovel's movement
+                    if (this.y < -shovelImage.height) {
+                        this.visible = false; // Reset once the shovel reaches the top
+                    }
+                }
+            }
+        }
+        // Function to draw the snowflake on the canvas
+        function drawSnowflakes() {
+            for (const snowflake of snowflakes) {
+                snowflake.draw(ctx);
+            }          
+        }
+
+        function addSnowFlake() {
+            // Create an Image object for the snowflakeImage
+            const snowflakeImage = new Image();
+            snowflakeImage.src = 'assets/snow-flake.png';
+
+            const snowflake = new Snowflake(Math.floor(Math.random() * (canvas.width - snowflakeImage.width)), 0, snowflakeImage);
+            snowflakes.push(snowflake);
+        }
+
+        function keyDownHandler(event) {
+            // Move to the right on right arrow key press
+          if (event.code === 'ArrowRight' && alexanderX <= 1180) {
+                alexanderX += 15; // Adjust the movement speed as needed
+            }
+
+            // Move to the left on left arrow key press
+          if (event.code === 'ArrowLeft' && alexanderX >= 10) {
+                alexanderX -= 15; // Adjust the movement speed as needed
+            }
+
+            if (event.code === 'Space' && !shovel.visible) {
+                shovel.visible = true;
+                shovel.x = alexanderX;
+                shovel.y = canvas.height; // Reset shovel to the bottom
+            }
+        }
+        function checkCollisions() {
+            for (let i = snowflakes.length - 1; i >= 0; i--) {
+                const snowflake = snowflakes[i];
+
+                if (collisionDetection(shovel, snowflake)) {
+                    // Collision detected, remove the snowflake from the array
+                    snowflakes.splice(i, 1);
+                    score++;
+                    // You can add additional logic here when a collision occurs
+                }
+            }
+        }
+
+        function collisionDetection(obj1, obj2) {
+            return (
+                obj1.x < obj2.x + obj2.image.width &&
+                obj1.x + obj1.image.width > obj2.x &&
+                obj1.y < obj2.y + obj2.image.height &&
+                obj1.y + obj1.image.height > obj2.y
+            );
+        }
+        // Function to update the snowflake's position and trigger animation loop
+        function update() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (const snowflake of snowflakes) {
+              snowflake.update();
+            }
+            //ctx.drawImage(alex1,canvas.width/2,canvas.height-alex1.height);
+            //ctx.drawImage(alex1,canvas.width-(alex1.width+50),canvas.height-alex1.height);
+            for (let i = 0; i < offices; i++) {
+                ctx.drawImage(office,100+(i*150),canvas.height-office.height);
+            }
+
+            ctx.drawImage(alex1,alexanderX,canvas.height-alex1.height);
+
+            shovel.update();
+            shovel.draw(ctx);
+            drawSnowflakes();
+
+            checkCollisions();
+            if (Math.floor(Math.random() * 50) === 0 && snowflakes.length < 70) {
+                addSnowFlake();
+            }
+
+            if (hitCount > 10) {
+              offices--;
+              if (0 === offices) {
+                alert("game over. Score: ** " + score + " **");
+              }
+              hitCount = 0;
+            }
+            requestAnimationFrame(update);
+        }
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+        let alexanderX = canvas.width/2;
+        let offices = 3;
+        let hitCount = 0;
+        let score = 0;
+        // Create a linear gradient from bottom to top
+        const alex1 = new Image();
+        alex1.src = 'assets/alexander.png';
+
+        const office = new Image();
+        office.src = 'assets/office.png';
+
+        const shovelImage = new Image();
+        shovelImage.src = 'assets/shovel.png';
+        const shovel = new Shovel(alexanderX, canvas.height, shovelImage);
+
+        let snowflakes = [];
+
+        // Start the animation loop
+        document.addEventListener('keydown', keyDownHandler);
+        addSnowFlake();
+        update();
+    </script>
+</body>
+</html>
