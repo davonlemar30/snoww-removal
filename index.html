@@ -62,7 +62,7 @@
 
             update() {
                 if (this.visible) {
-                    this.y -= 10; // Adjust the speed of the shovel's movement
+                    this.y -= 5; // Adjust the speed of the shovel's movement
                     if (this.y < -shovelImage.height) {
                         shovels.shift()
                     }
@@ -125,7 +125,7 @@
                 alexanderX -= 15; // Adjust the movement speed as needed
           }
 
-          if (event.code === 'Space' && shovels.length < 10) {
+          if (event.code === 'Space' && shovels.length < 20) {
               const shovel = new Shovel(alexanderX, canvas.height, shovelImage);
               shovel.visible = true;
               shovel.x = alexanderX;
@@ -243,7 +243,7 @@
         const canvas = document.getElementById('myCanvas');
         const ctx = canvas.getContext('2d');
         let alexanderX = canvas.width/2;
-        let offices = 2;
+        let offices = 3;
         let hitCount = 0;
         let score = 0;
         let shovels = [];
