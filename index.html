@@ -56,6 +56,10 @@
 
             draw(ctx) {
                 if (this.visible) {
+// uncomment these three lines to make the shovel massive
+//                    this.image.width=200;                                                                                                                 
+//                    this.image.height=500;                                                                                                                
+//                    ctx.drawImage(this.image, this.x, this.y,200,500);                  
                     ctx.drawImage(this.image, this.x, this.y);
                 }
             }
