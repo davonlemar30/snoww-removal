@@ -1,0 +1,156 @@
+body {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    /* Stack children vertically */
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: #000099;
+    overflow: hidden;
+}
+
+#startGameBtn {
+    display: block; /* Make sure the button is a block-level element */
+    margin: 20px auto 0; /* Center the button horizontally and add space above */
+    padding: 10px 20px; /* Padding for the button */
+    font-size: 32px; /* Larger font size for the button */
+    background-color: #1e90ff; /* A frosty blue background color */
+    color: white; /* White text color */
+    border: none; /* Remove the border */
+    border-radius: 5px; /* Slightly rounded corners */
+    cursor: pointer; /* Change the mouse cursor to indicate it's clickable */
+    box-shadow: 0px 0px 6px rgba(255, 255, 255, 0.8); /* Add a light shadow to the button */
+    margin-top: 650px; /* Moved from inline to external CSS */
+
+    cursor: pointer;
+}
+
+#winScreen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background: linear-gradient(to bottom, #e0f7fa, #51bffe);
+    animation: glow 2s ease-in-out infinite;
+    z-index: 10;
+}
+
+#winScreen h2 {
+    text-align: center;
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+    color: #0481ff;
+    text-shadow: 0 0 6px #fff, 0 0 10px #fff, 0 0 15px #a3b1c6, 0 0 20px #a3b1c6;
+    font-size: 48px;
+    animation: throb 1s ease-in-out infinite;
+}
+
+#congratsText {
+    /* Frosty text effect */
+    color: #0481ff;
+    text-shadow: 0 0 6px #fff, 0 0 10px #fff, 0 0 15px #a3b1c6, 0 0 20px #a3b1c6;
+    font-size: 48px
+    /* You may adjust the colors to get the desired frosty effect */
+}
+
+#congratsText .highlight {
+    font-size: larger; /* Larger size for 'Congratulations' */
+    display: block; /* Block display to put it on its own line */
+}
+
+#loseScreen {
+    /* Positioning to cover the whole viewport */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-size: cover;
+    z-index: 10;
+  
+    /* Optional: dark overlay to darken the image and make the text pop */
+    background-color: rgba(0, 0, 0, 0.7);
+    background-blend-mode: multiply;
+  }
+  
+  #loseScreen h1 {
+    color: red;
+    text-shadow: 2px 2px 4px #000;
+    font-size: 4em;
+    margin-bottom: 0.2em;
+    animation: throb 1s ease-in-out infinite;
+  }
+  
+  #loseScreen h2 {
+    color: white;
+    text-shadow: 2px 2px 4px #000;
+    font-size: 2em;
+  }
+
+  /* Pulsing animation for the 'Game Over' text */
+@keyframes throb {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+
+
+
+#playAgainBtn {
+  padding: 10px 20px;
+  font-size: 1.5em; /* Larger font size for the button */
+  background-color: red;
+  border: none;
+  color: white;
+  cursor: pointer;
+  margin-top: 20px; /* Space from the message above */
+  border-radius: 5px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  transition: background-color 0.3s ease;
+
+  /* Hover effect */
+  &:hover {
+    background-color: darkred;
+  }}
+
+  #winScreen #playAgainBtn {
+    background-color: #1f87e8; /* Change this to your desired 'win screen' button color */
+    /* Other styles you want to apply specifically to this button on the win screen */
+}
+  
+#teaserBtn {
+    display: block; /* Stack it below the Play Again button */
+    margin-top: 20px; /* Space from the Play Again button above */
+    padding: 10px 20px;
+    font-size: 20px; /* Slightly smaller than the Play Again button */
+    background-color: #555; /* Neutral color to indicate it's not yet available */
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    cursor: default; /* Default cursor to indicate it's not clickable */
+}
+
+/* Optional: If you decide to make this a clickable teaser later on, you can add a hover effect */
+#teaserBtn:hover {
+    background-color: #777;
+}
+
+canvas {
+    border: 2px solid #fad6a5;
+    /* Set your desired border color */
+    background: linear-gradient(to top, #FF7F50, blue);
+}
+
+
