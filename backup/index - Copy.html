@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snow Removal!!!!!!</title>
+    <link rel="icon" type="image/x-icon" href="assets/snow-flake.png">
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #000099;
+            /* Set your desired background color */
+            overflow: hidden;
+        }
+
+        canvas {
+            border: 2px solid #fad6a5;
+            /* Set your desired border color */
+            background: linear-gradient(to top, #FF7F50, blue);
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="myCanvas" width="1200" height="900"></canvas>
+
+    <script>
+        // Variable Declarations
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+        let alexanderX = canvas.width / 2;
+        let offices = 3;
+        let hitCount = 0;
+        let score = 0;
+        let shovels = [];
+        let left = false;
+        let right = false;
+        let machineGun = false;
+        let iceKing = false;
+        let belowFreezing = false;
+        let deathsDoor = null;
+        let startTime;
+        let keys = {};
+        let snowflakeCount = 0;
+        let normalSpeed = 15; // Assuming this is the normal speed
+        let boostedSpeed = normalSpeed * 2; // The boosted speed is 2x the normal speed
+        let isSpeedBoosted = false;
+        let superPowerActive = false;
+        let spacebarHeldDown = false;
+        let canShoot = true; // Allows shooting only when true
+        let shooting = false; // True when a shovel is being shot
+        let lastShovelTime = Date.now(); // Stores the timestamp of the last shot
+
+        // Class Definitions
+        class Snowflake {
+            constructor(x, y, image) {
+                this.x = x;
+                this.y = y;
+                this.image = image;
+            }
+
+            draw(ctx) {
+                ctx.drawImage(this.image, this.x, this.y);
+            }
+
+            update() {
+                this.y += 1;
+                // Reset the position when the snowflake goes off the canvas
+                if (this.y > canvas.height) {
+                    this.y = this.image.height;
+                    hitCount++;
+                }
+            }
+        }
+        class Shovel {
+            constructor(x, y, image) {
+                this.x = x;
+                this.y = y;
+                this.image = image;
+                this.visible = false;
+            }
+
+            draw(ctx) {
+                if (this.visible) {
+                    // uncomment these three lines to make the shovel massive
+                    //                    this.image.width=200;                                                                                                                 
+                    //                    this.image.height=500;                                                                                                                
+                    //                    ctx.drawImage(this.image, this.x, this.y,200,500);                  
+                    ctx.drawImage(this.image, this.x, this.y);
+                }
+            }
+
+            update() {
+                if (this.visible) {
+                    this.y -= 5; // Adjust the speed of the shovel's movement
+                    if (this.y < -shovelImage.height) {
+                        shovels.shift()
+                    }
+                }
+            }
+        }
+        class SpecialItem {
+            constructor(x, y, image) {
+                this.x = x;
+                this.y = y;
+                this.image = image;
+            }
+
+            draw(ctx) {
+                ctx.drawImage(this.image, this.x, this.y);
+            }
+
+            update() {
+                if (this.visible) {
+                    this.y -= 15; // Adjust the speed of the shovel's movement
+                }
+            }
+        }
+
+
+
+        // Function to draw the snowflake on the canvas
+        function drawSnowflakes() {
+            for (const snowflake of snowflakes) {
+                snowflake.draw(ctx);
+            }
+        }
+
+        // Function to draw the shovel on the canvas
+        function drawShovels() {
+            for (const shovel of shovels) {
+                shovel.draw(ctx);
+            }
+        }
+
+        function addSnowFlake() {
+            // Create an Image object for the snowflakeImage
+            if (Math.floor(Math.random() * 100) % 10 === 0 && snowflakes.length < 70) {
+                //const infinity = new SpecialItem(Math.floor(Math.random() * (canvas.width - infinityImg.width)), 0, infinityImg);
+                //snowflakes.push(infinity);
+            }
+            const snowflakeImage = new Image();
+            snowflakeImage.src = 'assets/snow-flake.png';
+
+            const snowflake = new Snowflake(Math.floor(Math.random() * (canvas.width - snowflakeImage.width)), 0, snowflakeImage);
+            snowflakes.push(snowflake);
+        }
+
+        function keyDownHandler(event) {
+            keys[event.key] = true;
+            // Only respond to key presses if a shovel is not currently being shot or super power is active
+            if (!shooting || superPowerActive) {
+                // Movement controls
+                let currentSpeed = isSpeedBoosted ? boostedSpeed : normalSpeed;
+                if (event.code === 'ArrowRight' && alexanderX <= (canvas.width - alex1.width)) {
+                    alexanderX += currentSpeed;
+                } else if (event.code === 'ArrowLeft' && alexanderX >= 0) {
+                    alexanderX -= currentSpeed;
+                }
+            }
+        }
+        
+        // Attach these handlers to 'document'
+        document.addEventListener('keydown', keyDownHandler);
+        document.addEventListener('keyup', keyUpHandler);
+
+        function keyUpHandler(event) {
+            keys[event.key] = false;
+
+            // Shooting controls
+            if (event.code === 'Space' && canShoot) {
+                canShoot = false; // Prevent further shots until allowed
+                shooting = true; // Alexander is now shooting
+
+                // Create and shoot the shovel
+                const shovel = new Shovel(alexanderX, canvas.height - shovelImage.height, shovelImage);
+                shovel.visible = true;
+                shovels.push(shovel);
+
+                if (!superPowerActive) {
+                    // If superpower is not active, set a timeout to allow next shot after 1 second
+                    setTimeout(() => {
+                        canShoot = true;
+                    }, 1000);
+                } else {
+                    // If super power is active, allow shooting again immediately
+                    canShoot = true;
+                }
+            }
+        }
+
+
+        function checkCollisions() {
+            for (let i = snowflakes.length - 1; i >= 0; i--) {
+                const snowflake = snowflakes[i];
+                for (let j = shovels.length - 1; j >= 0; j--) {
+                    const shovel = shovels[j];
+                    if (collisionDetection(shovel, snowflake)) {
+                        // Collision detected, remove the snowflake from the array
+                        snowflakes.splice(i, 1);
+                        score++;
+                        snowflakeCount++; // Increase the count of collected snowflakes
+
+                        if (snowflakeCount >= 10) {
+                            activateSpeedBoost();
+                            snowflakeCount = 0; // Reset the count after activating the boost
+                        }
+                        // Assuming one shovel can only hit one snowflake at a time.
+                        return; // Use return here instead of break
+                    }
+                }
+            }
+        } // The checkCollisions function should close here
+
+        function activateSpeedBoost() {
+            if (!isSpeedBoosted) {
+                isSpeedBoosted = true;
+                superPowerActive = true; // Add this line to track super power activation
+
+                // Draw some notification on the canvas
+                ctx.font = '30px Arial';
+                ctx.fillStyle = 'yellow';
+                ctx.fillText('Super Speed Activated!', canvas.width / 2, 50);
+
+                setTimeout(() => {
+                    isSpeedBoosted = false;
+                    superPowerActive = false; // Add this line to deactivate the notification
+                }, 10000); // This will execute after 10 seconds, turning off the boost
+            }
+        } // The activateSpeedBoost function should close here
+
+        function collisionDetection(obj1, obj2) {
+            return (
+                obj1.x < obj2.x + obj2.image.width &&
+                obj1.x + obj1.image.width > obj2.x &&
+                obj1.y < obj2.y + obj2.image.height &&
+                obj1.y + obj1.image.height > obj2.y
+            );
+        } // The collisionDetection function should close here
+
+        // Function to update the snowflake's position and trigger animation loop
+        function update() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (const snowflake of snowflakes) {
+                snowflake.update();
+            }
+
+            // Allow Alexander to shoot again if a second has passed
+            if (!canShoot && !shooting) {
+                let currentTime = Date.now();
+                if (currentTime - lastShovelTime >= 1000) {
+                    canShoot = true;
+                }
+            }
+
+            // Handle the normal shooting mechanism when super power is not active
+            if (!superPowerActive && spacebarHeldDown && canShoot) {
+                const currentTime = Date.now();
+                if (currentTime - lastShovelTime >= 1000) {
+                    // Enough time has passed since the last shot, shoot another shovel
+                    canShoot = false; // Prevent further shots until allowed
+                    lastShovelTime = currentTime;
+
+                    const shovel = new Shovel(alexanderX, canvas.height - shovelImage.height, shovelImage);
+                    shovel.visible = true;
+                    shovels.push(shovel);
+
+                    // Set a timeout to allow the next shot after 1 second
+                    setTimeout(() => {
+                        canShoot = true;
+                    }, 1000);
+                }
+                // If superpower is active, allow continuous shooting while the spacebar is held down
+                if (superPowerActive && spacebarHeldDown) {
+                    shooting = true; // Alexander is continuously shooting
+                    let currentTime = Date.now();
+                    if (currentTime - lastShovelTime >= 1000) {
+                        lastShovelTime = currentTime;
+                        // Create a new shovel
+                        const shovel = new Shovel(alexanderX, canvas.height - shovelImage.height, shovelImage);
+                        shovel.visible = true;
+                        shovels.push(shovel);
+                    }
+                }
+                // Update game objects
+                snowflakes.forEach(snowflake => snowflake.update());
+                shovels.forEach(shovel => shovel.update());
+
+                // Draw game objects
+                drawSnowflakes();
+                drawShovels();
+
+                // Check for collisions
+                checkCollisions();
+
+
+
+                if (superPowerActive) {
+                    // Redraw the notification if the super power is active
+                    ctx.fillText('Super Speed Activated!', canvas.width / 2, 50);
+                }
+
+                // If spacebar is held down and superpower is active, allow continuous shooting
+                if (spacebarHeldDown && superPowerActive) {
+                    let currentTime = Date.now();
+                    // Check if at least 1 second has passed since the last shot
+                    if (currentTime - lastShovelTime >= 1000) {
+                        lastShovelTime = currentTime; // Update the last shovel time
+                        // Create a new shovel continuously while the spacebar is held down
+                        const shovel = new Shovel(alexanderX, canvas.height - shovelImage.height, shovelImage);
+                        shovel.visible = true;
+                        shovels.push(shovel);
+                    }
+                }
+
+                //ctx.drawImage(alex1,canvas.width/2,canvas.height-alex1.height);
+                //ctx.drawImage(alex1,canvas.width-(alex1.width+50),canvas.height-alex1.height);
+                for (let i = 0; i < offices; i++) {
+                    ctx.drawImage(office, 100 + (i * 150), canvas.height - office.height);
+                }
+
+                ctx.drawImage(alex1, alexanderX, canvas.height - alex1.height);
+
+                for (const shovel of shovels) {
+                    shovel.update();
+                }
+                drawShovels();
+
+                drawSnowflakes();
+
+                checkCollisions();
+                if (Math.floor(Math.random() * 50) === 0 && snowflakes.length < 100) {
+                    addSnowFlake();
+                }
+
+                if (30 === score) {
+                    belowFreezing = true;
+                    startTime = Date.now()
+                } else if (100 === score) {
+                    iceKing = true;
+                    startTime = Date.now()
+                }
+
+                // Render the image if the timer is active
+                if (iceKing) {
+                    const elapsedTime = Date.now() - startTime;
+                    if (elapsedTime < 5000) { // 5000 milliseconds = 5 seconds
+                        // Draw the image
+                        ctx.drawImage(iceKingWords, (canvas.width / 2) - iceKingWords.width / 2, canvas.height / 2);
+                    } else {
+                        // Stop rendering the image after 5 seconds
+                        startTime = null;
+                        iceKing = false;
+                    }
+                }
+                if (belowFreezing) {
+                    const elapsedTime = Date.now() - startTime;
+                    if (elapsedTime < 5000) { // 5000 milliseconds = 5 seconds
+                        // Draw the image
+                        ctx.drawImage(belowFreezingWords, (canvas.width / 2) - belowFreezingWords.width / 2, canvas.height / 2);
+                    } else {
+                        // Stop rendering the image after 5 seconds
+                        startTime = null;
+                        belowFreezing = false;
+                    }
+                }
+
+                if (deathsDoor) {
+                    const elapsedTime = Date.now() - startTime;
+                    if (elapsedTime < 10000) { // 5000 milliseconds = 5 seconds
+                        // Draw the image
+                        ctx.drawImage(deathsDoorWords, (canvas.width / 2) - deathsDoorWords.width / 2, canvas.height / 2);
+                    } else {
+                        // Stop rendering the image after 5 seconds
+                        startTime = null;
+                        deathsDoor = false;
+                    }
+                }
+                if (hitCount > 10) {
+                    offices--;
+                    if (1 === offices) {
+                        belowFreezing = false;
+                        iceKind = false;
+                        deathsDoor = true;
+                        startTime = Date.now()
+                    } else if (0 === offices) {
+                        alert("game over. Score: ** " + score + " **");
+                    }
+                    hitCount = 0;
+                }
+                requestAnimationFrame(update);
+            }
+
+
+
+
+            // Create a linear gradient from bottom to top
+            const alex1 = new Image();
+            alex1.src = 'assets/alexander.png';
+
+            const office = new Image();
+            office.src = 'assets/office.png';
+
+            const shovelImage = new Image();
+            shovelImage.src = 'assets/shovel.png';
+
+            const infinityImg = new Image();
+            infinityImg.src = 'assets/infinity.png';
+
+            const iceKingWords = new Image();
+            iceKingWords.src = 'assets/ice-king.png';
+
+            const belowFreezingWords = new Image();
+            belowFreezingWords.src = 'assets/below-freezing.png';
+
+            const deathsDoorWords = new Image();
+            deathsDoorWords.src = 'assets/deaths-door.png';
+
+            let snowflakes = [];
+
+            // Start the animation loop
+
+            addSnowFlake();
+            update();
+    </script>
+</body>
+
+</html>

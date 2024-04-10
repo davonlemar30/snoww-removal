@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snow Removal!!!!!!</title>
+    <link rel="icon" type="image/x-icon" href="assets/snow-flake.png">
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            /* Stack children vertically */
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #000099;
+            overflow: hidden;
+        }
+
+        #startGameBtn {
+            position: absolute;
+            /* Position it over the canvas */
+            z-index: 10;
+            /* Ensure it's above the canvas */
+            padding: 20px 40px;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        canvas {
+            border: 2px solid #fad6a5;
+            /* Set your desired border color */
+            background: linear-gradient(to top, #FF7F50, blue);
+        }
+    </style>
+</head>
+
+<body>
+
+
+    <button id="startGameBtn">Start Game</button>
+    <canvas id="myCanvas" width="1200" height="900"></canvas>
+
+
+    <script>
+        let lastShovelTime = 0;
+        let shovelCooldown = 1000; // 1000 milliseconds = 1 second
+        let gameStarted = false;
+        let snowflakesHit = 0;
+        let superPowerActive = false;
+        let movementSpeed = 15; // Default movement speed
+        let superPowerActivationThreshold = 10; // Initial hits required to activate superpower mode
+        let hitsSinceLastSuperPower = 0; // Counter for hits since the last superpower mode deactivation
+        const SNOW_ACCUMULATION_RATE = 50; // The rate at which snow accumulates
+        let snowAccumulation = 0; // The current level of snow on the ground
+        const BUILDING_HEIGHT = 100; // The height of the buildings
+        let buildingVisibility = [BUILDING_HEIGHT, BUILDING_HEIGHT, BUILDING_HEIGHT]; // The initial visible height of each building
+        let gameDuration = 60000; // 60 seconds in milliseconds
+        let superPowerTimeoutId;
+        let belowFreezingStartTime;
+        let iceKingStartTime
+
+
+
+
+        class Snowflake {
+            constructor(x, y, image) {
+                this.x = x;
+                this.y = y;
+                this.image = image;
+            }
+
+            draw(ctx) {
+                ctx.drawImage(this.image, this.x, this.y);
+            }
+
+            update() {
+                this.y += 1; // Snowflakes fall speed
+                // Reset the position when the snowflake goes off the canvas
+                if (this.y > canvas.height) {
+                    this.y = -this.image.height;
+                    hitCount++;
+                    snowAccumulation += SNOW_ACCUMULATION_RATE; // Increase accumulation rate based on snowflake size
+                }
+            }
+        }
+        class Shovel {
+            constructor(x, y, image) {
+                this.x = x;
+                this.y = y;
+                this.image = image;
+                this.visible = false;
+            }
+
+            draw(ctx) {
+                if (this.visible) {
+                    // uncomment these three lines to make the shovel massive
+                    //                    this.image.width=200;                                                                                                                 
+                    //                    this.image.height=500;                                                                                                                
+                    //                    ctx.drawImage(this.image, this.x, this.y,200,500);                  
+                    ctx.drawImage(this.image, this.x, this.y);
+                }
+            }
+
+            update() {
+                if (this.visible) {
+                    this.y -= 5; // Adjust the speed of the shovel's movement
+                    if (this.y < -shovelImage.height) {
+                        shovels.shift()
+                    }
+                }
+            }
+        }
+        class SpecialItem {
+            constructor(x, y, image) {
+                this.x = x;
+                this.y = y;
+                this.image = image;
+            }
+
+            draw(ctx) {
+                ctx.drawImage(this.image, this.x, this.y);
+            }
+
+            update() {
+                if (this.visible) {
+                    this.y -= 15; // Adjust the speed of the shovel's movement
+                }
+            }
+        }
+
+        // Function to draw the snowflake on the canvas
+        function drawSnowflakes() {
+            for (const snowflake of snowflakes) {
+                snowflake.draw(ctx);
+            }
+        }
+
+        // Function to draw the shovel on the canvas
+        function drawShovels() {
+            for (const shovel of shovels) {
+                shovel.draw(ctx);
+            }
+        }
+
+        function addSnowFlake() {
+            // Create an Image object for the snowflakeImage
+            if (Math.floor(Math.random() * 100) % 10 === 0 && snowflakes.length < 70) {
+                //const infinity = new SpecialItem(Math.floor(Math.random() * (canvas.width - infinityImg.width)), 0, infinityImg);
+                //snowflakes.push(infinity);
+            }
+            const snowflakeImage = new Image();
+            snowflakeImage.src = 'assets/snow-flake.png';
+
+            const snowflake = new Snowflake(Math.floor(Math.random() * (canvas.width - snowflakeImage.width)), -snowflakeImage.height, snowflakeImage); // Start off-canvas above
+            snowflakes.push(snowflake);
+        }
+
+        function keyDownHandler(event) {
+            if (!gameStarted) {
+                return; // Exit if the game hasn't started
+            }
+
+            const now = Date.now(); // Get the current time
+
+            if (event.code === 'ArrowRight' && alexanderX <= 1180) {
+                alexanderX += movementSpeed; // Use variable for speed
+                if (superPowerActive) {
+                    shootShovel(); // Shoot shovel in superpower mode
+                }
+            } else if (event.code === 'ArrowLeft' && alexanderX >= 10) {
+                alexanderX -= movementSpeed; // Use variable for speed
+                if (superPowerActive) {
+                    shootShovel(); // Shoot shovel in superpower mode
+                }
+            }
+
+            if (event.code === 'Space' && !superPowerActive && now - lastShovelTime >= shovelCooldown && shovels.length < 20) {
+                shootShovel();
+            }
+        }
+
+        function shootShovel() {
+            const now = Date.now();
+            if (!superPowerActive || (superPowerActive && now - lastShovelTime >= shovelCooldown / 10)) { // Allow more frequent shooting in superpower mode
+                lastShovelTime = now; // Update lastShovelTime
+
+                // Determine the number of shovels to shoot
+                const shovelsToShoot = superPowerActive ? 3 : 1; // Shoot 3 shovels during superpower mode, otherwise shoot 1
+
+                for (let i = 0; i < shovelsToShoot; i++) {
+                    const offset = i * 20; // Offset each shovel slightly for visual separation
+                    const shovel = new Shovel(alexanderX + offset, canvas.height - shovelImage.height, shovelImage);
+                    shovel.visible = true;
+                    shovels.push(shovel);
+                }
+            }
+        }
+
+        function checkCollisions() {
+            for (let i = snowflakes.length - 1; i >= 0; i--) {
+                const snowflake = snowflakes[i];
+                for (let j = shovels.length - 1; j >= 0; j--) {
+                    const shovel = shovels[j];
+                    if (collisionDetection(shovel, snowflake)) {
+                        snowflakes.splice(i, 1);
+                        score++;
+                        snowflakesHit++;
+                        hitsSinceLastSuperPower++; // Increment our new counter
+
+                        if (hitsSinceLastSuperPower >= superPowerActivationThreshold && !superPowerActive) {
+                            superPowerActive = true;
+                            shovelCooldown /= 2; // Double the shooting speed
+                            movementSpeed *= 2; // Double the movement speed
+
+                            // Set a timeout to deactivate super power mode after 10 seconds
+                            superPowerTimeoutId = setTimeout(() => {
+                                superPowerActive = false;
+                                shovelCooldown *= 2; // Revert to original shooting speed
+                                movementSpeed /= 2; // Revert to original movement speed
+                                hitsSinceLastSuperPower = 0; // Reset the counter for hits since last superpower
+                                superPowerActivationThreshold += 10; // Increase the threshold for next activation
+                                //snowflakesHit = 0; // Reset snowflakes hit counter
+                            }, 10000);
+                        }
+
+                        // Additional logic for collision...
+                        break; // Exit the loop after handling collision
+                    }
+                }
+            }
+        }
+
+        function collisionDetection(obj1, obj2) {
+            return (
+                obj1.x < obj2.x + obj2.image.width &&
+                obj1.x + obj1.image.width > obj2.x &&
+                obj1.y < obj2.y + obj2.image.height &&
+                obj1.y + obj1.image.height > obj2.y
+            );
+        }
+
+        function updateSnowAccumulation() {
+            // Increment the snow accumulation
+            snowAccumulation += SNOW_ACCUMULATION_RATE;
+            console.log(snowAccumulation); // Log to ensure it's increasing
+
+        }
+
+
+
+        // Define your draw function here, outside and after your update function
+        function draw() {
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the entire canvas
+
+            // Draw snow accumulation on the ground
+            ctx.fillStyle = '#FFF'; // Snow color
+            ctx.fillRect(0, canvas.height - snowAccumulation, canvas.width, snowAccumulation);
+
+            // Draw buildings with correct visibility
+            for (let i = 0; i < buildingVisibility.length; i++) {
+                let adjustedHeight = Math.max(buildingVisibility[i] - snowAccumulation, 0);
+                let adjustedY = canvas.height - adjustedHeight;
+                ctx.drawImage(office, 100 + (i * 150), adjustedY, office.width, adjustedHeight);
+            }
+
+
+
+            // Draw other game elements like snowflakes, shovels, etc.
+            drawSnowflakes();
+            drawShovels();
+
+            // Draw HUD elements like score and superpower indicators
+            ctx.fillText("Snowflakes Hit: " + snowflakesHit, 10, 30);
+            if (superPowerActive) {
+                ctx.font = '30px Arial';
+                ctx.fillStyle = 'yellow';
+                ctx.textAlign = 'center';
+                ctx.fillText('SUPERPOWER ACTIVATED!!', canvas.width / 2, 50);
+            }
+            // Any additional rendering goes here
+        }
+
+        function drawMultiLineText(ctx, text, x, y, maxWidth, lineHeight) {
+            var words = text.split(' ');
+            var line = '';
+
+            for (var n = 0; n < words.length; n++) {
+                var testLine = line + words[n] + ' ';
+                var metrics = ctx.measureText(testLine);
+                var testWidth = metrics.width;
+                if (testWidth > maxWidth && n > 0) {
+                    ctx.fillText(line, x, y);
+                    line = words[n] + ' ';
+                    y += lineHeight;
+                }
+                else {
+                    line = testLine;
+                }
+            }
+            ctx.fillText(line, x, y);
+        }
+
+        function gameOver(win = false) {
+            clearTimeout(superPowerTimeoutId);
+            gameStarted = false;
+            cancelAnimationFrame(update);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Text style for stroke
+            ctx.font = 'bold 40px Arial';
+            ctx.strokeStyle = 'white'; // Stroke color
+            ctx.lineWidth = 3; // Stroke width
+            ctx.textAlign = 'center';
+
+            // Text style for fill
+            ctx.fillStyle = 'red';
+
+            // Splitting the message into two parts for better control
+            if (win) {
+                // Stroking (outlining) the text
+                ctx.strokeText('Congratulations!', canvas.width / 2, canvas.height / 2 - 20);
+                ctx.strokeText('You helped your coworkers survive the snow storm!', canvas.width / 2, canvas.height / 2 + 20);
+
+                // Filling the text
+                ctx.fillText('Congratulations!', canvas.width / 2, canvas.height / 2 - 20);
+                ctx.fillText('You helped your coworkers survive the snow storm!', canvas.width / 2, canvas.height / 2 + 20);
+            } else {
+                // Stroking (outlining) the text
+                ctx.strokeText('Game Over', canvas.width / 2, canvas.height / 2);
+
+                // Filling the text
+                ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2);
+            }
+
+            // Create and style the Day 2 button
+            var day2Btn = document.createElement('button');
+            day2Btn.innerText = 'Day 2';
+            day2Btn.style.position = 'absolute';
+            day2Btn.style.left = '50%';
+            day2Btn.style.top = '60%';
+            day2Btn.style.transform = 'translateX(-50%)';
+            day2Btn.style.padding = '10px 20px';
+            day2Btn.style.fontSize = '20px';
+            day2Btn.onclick = function () {
+                // Placeholder for starting Day 2
+                alert('Starting Day 2!');
+                // Here you would initialize level 2 specifics and start the game
+            };
+
+            // Create and style the Start Over button
+            var startOverBtn = document.createElement('button');
+            startOverBtn.innerText = 'Start Over';
+            startOverBtn.style.position = 'absolute';
+            startOverBtn.style.left = '50%';
+            startOverBtn.style.top = '70%';
+            startOverBtn.style.transform = 'translateX(-50%)';
+            startOverBtn.style.padding = '10px 20px';
+            startOverBtn.style.fontSize = '20px';
+            startOverBtn.onclick = function () {
+                // Reload the page to restart the game
+                location.reload();
+            };
+
+            // Add the buttons to the body
+            document.body.appendChild(day2Btn);
+            document.body.appendChild(startOverBtn);
+        }
+
+        // Adjust the part of your `update` function that checks for timer expiry:
+        if (gameStarted && startTime) {
+            let elapsedTime = Date.now() - startTime;
+            let remainingTime = Math.max(gameDuration - elapsedTime, 0); // Ensure remaining time doesn't go below 0
+            let seconds = Math.floor(remainingTime / 1000); // Convert to seconds
+
+            // Display the timer
+            ctx.font = "20px Arial";
+            ctx.fillStyle = "red";
+            ctx.textAlign = 'right';
+            ctx.fillText(`Time Left: ${seconds}s`, canvas.width - 20, 30);
+
+            if (remainingTime <= 0) {
+                // Time's up - End game with a win
+                gameStarted = false; // Stop game logic updates
+                gameOver(true); // Call gameOver with `true` to indicate a win
+            }
+        }
+
+
+
+        // Function to update the snowflake's position and trigger animation loop
+        function update() {
+
+            // First thing to do in the update loop
+            if (!gameStarted) {
+                // If gameStarted is false, we don't want to continue updating the game
+                return;
+            }
+
+            let elapsedTime = Date.now() - startTime;
+            let remainingTime = Math.max(gameDuration - elapsedTime, 0);
+
+            if (remainingTime <= 0 && gameStarted) {
+                // If the time is up and the game is still marked as running, we end the game
+                gameStarted = false;
+                gameOver(true);
+                return; // We exit the update function immediately
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Game state checks
+            if (gameStarted) {
+                let elapsedTime = Date.now() - startTime;
+                let remainingTime = gameDuration - elapsedTime;
+                if (remainingTime <= 0) {
+                    // Timer has expired - trigger win condition and end game updates
+                    gameOver(true); // Ensure this is the only gameOver call when time expires
+                    return; // Stop the update loop to prevent further game logic from executing
+                }
+
+                // Display remaining time
+                let seconds = Math.floor(remainingTime / 1000);
+                ctx.font = "20px Arial";
+                ctx.fillStyle = "red";
+                ctx.textAlign = 'right';
+                ctx.fillText(`Time Left: ${seconds}s`, canvas.width - 20, 30);
+            }
+
+            // Always draw the snowflakes hit counter at the top left
+            ctx.font = "20px Arial";
+            ctx.fillStyle = "white";
+            ctx.textAlign = 'left'; // Align text to the left
+            ctx.fillText("Snowflakes Hit: " + snowflakesHit, 10, 30);
+
+
+            updateSnowAccumulation();
+
+
+            if (superPowerActive) {
+                // Draw superpower activated message at the center top, without affecting the hit counter
+                ctx.font = '30px Arial';
+                ctx.fillStyle = 'yellow';
+                ctx.textAlign = 'center'; // Center align without moving the hit counter text
+                ctx.fillText('SUPERPOWER ACTIVATED!!', canvas.width / 2, 50);
+            }
+            //ctx.drawImage(alex1,canvas.width/2,canvas.height-alex1.height);
+            //ctx.drawImage(alex1,canvas.width-(alex1.width+50),canvas.height-alex1.height);
+            for (let i = 0; i < offices; i++) {
+                ctx.drawImage(office, 100 + (i * 150), canvas.height - office.height);
+            }
+
+            ctx.drawImage(alex1, alexanderX, canvas.height - alex1.height);
+
+            for (const shovel of shovels) {
+                shovel.update();
+            }
+            drawShovels();
+
+            // Draw snowflakes and update their position
+            drawSnowflakes(); // This should draw the current snowflakes
+            for (const snowflake of snowflakes) {
+                snowflake.update(); // This should move the snowflakes down
+            }
+
+            checkCollisions();
+            if (Math.floor(Math.random() * 50) === 0 && snowflakes.length < 100) {
+                addSnowFlake();
+            }
+
+            if (score === 30) {
+                belowFreezing = true;
+                belowFreezingStartTime = Date.now(); // Use the new variable for belowFreezing's timer
+            }
+
+
+            if (score === 100) {
+                iceKing = true;
+                iceKingStartTime = Date.now(); // Use a different variable instead of startTime
+            }
+
+            // Render the image if the timer is active
+            if (iceKing) {
+                const iceKingElapsedTime = Date.now() - iceKingStartTime; // Use the new variable
+                if (iceKingElapsedTime < 5000) {
+                    // Draw ice king related stuff
+                } else {
+                    // End ice king state
+                    iceKing = false;
+                }
+            }
+            if (belowFreezing) {
+                const belowFreezingElapsedTime = Date.now() - belowFreezingStartTime; // Use the new variable
+                if (belowFreezingElapsedTime < 5000) {
+                    // Draw below freezing related stuff
+                } else {
+                    // End below freezing state
+                    belowFreezing = false;
+                }
+            }
+
+            if (deathsDoor) {
+                const elapsedTime = Date.now() - startTime;
+                if (elapsedTime < 10000) { // 5000 milliseconds = 5 seconds
+                    // Draw the image
+                    ctx.drawImage(deathsDoorWords, (canvas.width / 2) - deathsDoorWords.width / 2, canvas.height / 2);
+                } else {
+                    // Stop rendering the image after 5 seconds
+                    startTime = null;
+                    deathsDoor = false;
+                }
+            }
+            //if (hitCount > 10) {
+            //offices--;
+            //if (1 === offices) {
+            //belowFreezing = false;
+            //iceKind = false;
+            //deathsDoor = true;
+            //startTime = Date.now()
+            //} else if (0 === offices) {
+            //alert("game over. Score: ** " + score + " **");
+            //}
+            //hitCount = 0;
+            //}
+
+            if (gameStarted && startTime) {
+                let elapsedTime = Date.now() - startTime;
+                let remainingTime = Math.max(gameDuration - elapsedTime, 0); // Ensure remaining time doesn't go below 0
+                let seconds = Math.floor(remainingTime / 1000); // Convert to seconds
+
+                // Display the timer
+                ctx.font = "20px Arial";
+                ctx.fillStyle = "red";
+                ctx.textAlign = 'right';
+                ctx.fillText(`Time Left: ${seconds}s`, canvas.width - 20, 30);
+
+                if (remainingTime <= 0 && gameStarted) {
+                    gameStarted = false; // This ensures the game logic stops
+                    gameOver(true); // Display the game over message
+                    return; // Stop further execution to fix the delay
+                }
+            }
+
+
+
+            requestAnimationFrame(update);
+        }
+
+
+
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+        let alexanderX = canvas.width / 2;
+        let offices = 3;
+        let hitCount = 0;
+        let score = 0;
+        let shovels = [];
+        let left = false;
+        let right = false;
+        let machineGun = false;
+        let iceKing = false;
+        let belowFreezing = false;
+        let deathsDoor = null;
+        let startTime;
+        let keys = {};
+
+        window.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            keyDownHandler(e); // Call keyDownHandler here
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+        // Create a linear gradient from bottom to top
+        const alex1 = new Image();
+        alex1.src = 'assets/alexander.png';
+
+        const office = new Image();
+        office.src = 'assets/office.png';
+
+        const shovelImage = new Image();
+        shovelImage.src = 'assets/shovel.png';
+
+        const infinityImg = new Image();
+        infinityImg.src = 'assets/infinity.png';
+
+        const iceKingWords = new Image();
+        iceKingWords.src = 'assets/ice-king.png';
+
+        const belowFreezingWords = new Image();
+        belowFreezingWords.src = 'assets/below-freezing.png';
+
+        const deathsDoorWords = new Image();
+        deathsDoorWords.src = 'assets/deaths-door.png';
+
+        let snowflakes = [];
+
+        function drawInitialScreen() {
+            if (!gameStarted) {
+                // Clear the canvas first
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // "Snow Removal" text settings
+                ctx.font = 'bold 150px Arial';
+                ctx.fillStyle = '#f0f8ff'; // Snow-like color
+                ctx.textAlign = 'center';
+                ctx.shadowColor = '#fff';
+                ctx.shadowBlur = 10;
+
+                // Calculate position for "Snow Removal" to be centered
+                const snowRemovalX = canvas.width / 2;
+                const snowRemovalY = canvas.height / 2 - 60;
+
+                // Draw "Snow Removal"
+                ctx.fillText('Snow Removal', snowRemovalX, snowRemovalY);
+
+                // Reset shadow for the version number
+                ctx.shadowBlur = 5;
+
+                // Version number "1.5" settings
+                ctx.font = '50px Arial';
+
+                // Measure "Snow Removal" text to position "1.5" correctly
+                const metrics = ctx.measureText('Snow Removal');
+                const textWidth = metrics.width;
+
+                // Position "1.5" to hang off the right side of "Snow Removal"
+                const versionX = snowRemovalX + (textWidth / 2) - -300; // Adjust X to right
+                const versionY = snowRemovalY + 65; // Adjust Y to be slightly below
+
+                // Draw "1.5"
+                ctx.fillText('1.5', versionX, versionY);
+
+                // Reset shadow settings for other drawing operations
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+            }
+        }
+
+
+
+        // Add the Start Game button's event listener here, at the end of your script
+        document.getElementById('startGameBtn').addEventListener('click', function () {
+            gameStarted = true;
+            this.style.display = 'none'; // Hide the button
+            startTime = Date.now();
+            update(); // Start the game update loop
+        });
+
+        drawInitialScreen();
+
+    </script>
+</body>
+
+</html>
