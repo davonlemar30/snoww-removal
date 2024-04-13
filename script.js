@@ -77,7 +77,7 @@ function drawInitialScreen() {
         const versionY = snowRemovalY + 65; // Adjust Y to be slightly below
 
         // Draw "1.5"
-        ctx.fillText('1.5', versionX, versionY);
+        ctx.fillText('v1.7', versionX, versionY);
 
         // Reset shadow settings for other drawing operations
         ctx.shadowColor = 'transparent';
