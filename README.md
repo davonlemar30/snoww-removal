@@ -6,7 +6,7 @@ SnowRemoval is an engaging and dynamic game where players work to keep office bu
 
 - **Win/Lose Conditions**: The game now includes definitive win and lose conditions based on the state of the office buildings. Keep the buildings clear of snow to stay in the game. Once all three buildings are covered, it's game over.
   
-- **Countdown Timer**: A timer adds urgency to the gameplay. Clear the snow before time runs out to claim victory!
+- **Countdown Timer**: A timer intensifies the gameplay. Survive for a minute without letting all three buildings be buried in snow to secure victory. If they're all covered before time's up, it's game over!
 
 - **Enhanced Win Screen**: Celebrate your win with a redesigned win screen that brings style to your success.
 
